@@ -66,8 +66,12 @@ public class UpdateHandler
     public async Task HandleCommandAsync(Message message)
     {
 
+        if (message.Voice is not null)
+        {
+            await HandleVoiceMessageAsync(message);
+        }
 
-        if (message.Text == null && !message.Text.StartsWith("/"))
+        if (message.Text == null)
         {
             return;
         }
@@ -81,6 +85,7 @@ public class UpdateHandler
                 "start" => HandleStartCommandAsync(message),
                 "userId" => HandleUserIdCommandAsync(message),
                 "send" => HandleSendCommandAsync(message),
+                "admin" => HandleAdminCommandAsync(message),
                 _ => HandleNotAvailableCommandAsync(message)
             };
 
@@ -128,6 +133,66 @@ public class UpdateHandler
         }
     }
 
+    private async Task HandleVoiceMessageAsync(Message message)
+    {
+        var adminUser = await dbContext
+            .Set<ChatBot.Core.Models.User>()
+            .FindAsync(message.From.Id);
+
+        if (adminUser.Role == Role.Admin)
+        {
+            if (adminUser.SelectUserId is not null)
+            {
+                await telegramBotClient.SendVoiceAsync(
+                    chatId: adminUser.SelectUserId,
+                    voice: message.Voice.FileId);
+            } else
+            {
+                var users = dbContext
+                    .Set<ChatBot.Core.Models.User>()
+                    .Where(user => user.Role == Role.User);
+
+                foreach (var user in users)
+                {
+                    try
+                    {
+                        await telegramBotClient.SendVoiceAsync(
+                            chatId: user.Id,
+                            voice: message.Voice.FileId);
+                    }
+                    catch (Exception)
+                    {
+                        dbContext.Remove(user);
+                    }
+                }
+                await dbContext.SaveChangesAsync();
+
+                await telegramBotClient.SendTextMessageAsync(
+                    chatId: message.From.Id,
+                    text: "Xabar yuborildi");
+            }
+        }
+        return;
+    }
+
+    private async Task HandleAdminCommandAsync(Message message)
+    {
+        var adminUser = await dbContext
+            .Set<ChatBot.Core.Models.User>()
+            .FindAsync(message.From.Id);
+        if (adminUser.Role == Role.Admin && adminUser.SelectUserId is not null)
+        {
+            var user = await dbContext
+                .Set<ChatBot.Core.Models.User>()
+                .FindAsync(adminUser.SelectUserId);
+            user.Role = Role.Admin;
+
+            dbContext.Set<ChatBot.Core.Models.User>().Update(user);
+            await dbContext.SaveChangesAsync();
+        }
+        return;
+    }
+
     private async Task HandleStartCommandAsync(Message message)
     {
         var telegramUser = message.From;
@@ -160,6 +225,11 @@ public class UpdateHandler
 
     private async Task HandleNotAvailableCommandAsync(Message message)
     {
+        if (message is null) 
+        { 
+            return;
+        }
+
         string messageText = message.Text;
 
         var user = dbContext.Set<ChatBot.Core.Models.User>()
@@ -241,9 +311,9 @@ public class UpdateHandler
                     chatId: user.Id,
                     text: messageText);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                dbContext.Remove(user);
+                logger.LogError(ex, ex.Message);
             }
         }
         await dbContext.SaveChangesAsync();
