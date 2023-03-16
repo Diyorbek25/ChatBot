@@ -26,8 +26,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddDbContextPool<AppDbContext>(options =>
         {
-            options.UseNpgsql(
-                connectionString: configuration.GetConnectionString("PostgreSqlConnectionString"));
+            options.UseSqlServer(
+                connectionString: configuration.GetConnectionString("SqlServer"));
         });
 
         return services;
