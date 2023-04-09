@@ -1,6 +1,7 @@
-using DailyLeetcodeReminder.Core.Extensions;
-using DailyLeetcodeReminder.Core.Middlewares;
+using ChatBot.Core.Extensions;
+using ChatBot.Core.Middlewares;
 using Telegram.Bot;
+
 
 namespace ChatBot.Core;
 
@@ -18,18 +19,19 @@ public class Program
         builder.Services
             .AddDbContexts(builder.Configuration)
             .AddUpdateHandler()
-            .AddTelegramBotClient(builder.Configuration);
+            .AddTelegramBotClient(builder.Configuration)
+            .AddJobs();
         
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
 
-        if (app.Environment.IsDevelopment())
-        {
+        //if (app.Environment.IsDevelopment())
+        //{
             app.UseSwagger();
             app.UseSwaggerUI();
-        }
+        //}
 
         app.UseHttpsRedirection();
 

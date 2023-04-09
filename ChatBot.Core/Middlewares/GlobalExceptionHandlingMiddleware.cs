@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace DailyLeetcodeReminder.Core.Middlewares
+namespace ChatBot.Core.Middlewares
 {
     public class GlobalExceptionHandlingMiddleware
     {

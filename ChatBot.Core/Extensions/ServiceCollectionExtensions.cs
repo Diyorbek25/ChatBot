@@ -1,9 +1,11 @@
 ﻿using ChatBot.Core.Contexts;
-using DailyLeetcodeReminder.Core.Services;
+using ChatBot.Core.Jobs;
+using ChatBot.Core.Services;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 using Telegram.Bot;
 
-namespace DailyLeetcodeReminder.Core.Extensions;
+namespace ChatBot.Core.Extensions;
 
 public static class ServiceCollectionExtensions
 {
@@ -37,6 +39,31 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
     {
         services.AddTransient<UpdateHandler>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddJobs(
+        this IServiceCollection services)
+    {
+        services.AddQuartz(q =>
+        {
+            q.UseMicrosoftDependencyInjectionScopedJobFactory();
+
+            var dailyReminderJobKey = new JobKey(nameof(DailyMessageJob));
+
+            q.AddJob<DailyMessageJob>(opts =>
+            {
+                opts.WithIdentity(dailyReminderJobKey);
+            });
+
+            q.AddTrigger(opts => opts
+                .ForJob(dailyReminderJobKey)
+                .WithIdentity($"{dailyReminderJobKey.Name}-trigger")
+                .WithCronSchedule("0 0 */2 * * ?")
+            );
+        });
+        services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
         return services;
     }

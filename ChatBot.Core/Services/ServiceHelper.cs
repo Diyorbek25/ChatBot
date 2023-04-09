@@ -1,10 +1,30 @@
-﻿using System.Text;
+﻿
+using ChatBot.Core.Models.JsonModels;
+using System.Text.Json;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DailyLeetcodeReminder.Core.Services;
 
 public static class ServiceHelper
 {
+    public static async Task<List<string>> GetAddressAsync(double lat, double lng)
+    {
+        var apiKey = "AIzaSyBq0twb915arXgAKwJXr3XDocU_jt2TgzU";
+        var url = $"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={apiKey}";
+
+        using var client = new HttpClient();
+        
+        var response = await client.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        var address = await response.Content.ReadAsStringAsync();
+
+        var root = JsonSerializer.Deserialize<Root>(address);
+        
+        return root.results
+            .Select(res => res.formatted_address)
+            .Take(3).ToList();
+    }
+
     public static InlineKeyboardMarkup GenerateButtons(int page)
     {
         var buttons = new List<List<InlineKeyboardButton>>();

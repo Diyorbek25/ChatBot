@@ -15,5 +15,12 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<User>().ToTable("Users");
+
+        modelBuilder.Entity<User>()
+            .HasKey(user => user.Id);
+
+        modelBuilder.Entity<User>()
+            .Property(user => user.Id)
+            .ValueGeneratedNever();
     }
 }

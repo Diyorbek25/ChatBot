@@ -4,6 +4,7 @@ using ChatBot.Core.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ChatBot.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230325003029_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,27 +47,6 @@ namespace ChatBot.Core.Migrations
                     b.ToTable("Address");
                 });
 
-            modelBuilder.Entity("ChatBot.Core.Models.SelectedUser", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<long?>("SelectedUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("SelectedUser");
-                });
-
             modelBuilder.Entity("ChatBot.Core.Models.User", b =>
                 {
                     b.Property<long>("Id")
@@ -74,9 +56,6 @@ namespace ChatBot.Core.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("FirstName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
@@ -98,15 +77,6 @@ namespace ChatBot.Core.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("ChatBot.Core.Models.SelectedUser", b =>
-                {
-                    b.HasOne("ChatBot.Core.Models.User", null)
-                        .WithMany("SelectedUsers")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("ChatBot.Core.Models.User", b =>
                 {
                     b.HasOne("ChatBot.Core.Models.Address", "Address")
@@ -114,11 +84,6 @@ namespace ChatBot.Core.Migrations
                         .HasForeignKey("AddressId");
 
                     b.Navigation("Address");
-                });
-
-            modelBuilder.Entity("ChatBot.Core.Models.User", b =>
-                {
-                    b.Navigation("SelectedUsers");
                 });
 #pragma warning restore 612, 618
         }
