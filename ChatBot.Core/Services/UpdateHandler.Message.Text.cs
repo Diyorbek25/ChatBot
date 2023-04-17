@@ -22,7 +22,8 @@ public partial class UpdateHandler
                 "send" => HandleSendCommandAsync(message),
                 "admin" => HandleAdminCommandAsync(message),
                 "register" => HandleRegisterCommandAsync(message),
-                "map" => HandleMapCommandAsync(message),
+                "region" => HandleRegionCommandAsync(message),
+                "address" => HandleAddressCommandAsync(message),
                 _ => HandleNotAvailableCommandAsync(message)
             };
 
@@ -40,28 +41,48 @@ public partial class UpdateHandler
         }
     }
 
-    private async Task HandleMapCommandAsync(Message message)
+    private async Task HandleAddressCommandAsync(Message message)
     {
+        string address = message.Text?.Substring(8).TrimStart().TrimEnd();
+
         var user = await dbContext.Set<Models.User>()
-            .Include(user => user.SelectedUsers)
+            .Include(user => user.Address)
             .FirstOrDefaultAsync(user => user.Id == message.From.Id);
 
-        foreach (var item in user.SelectedUsers)
+        if (string.IsNullOrEmpty(address))
         {
+            await this.telegramBotClient.SendTextMessageAsync(
+                chatId: message.From?.Id,
+                text: "Manzilingizni qaytadan yuboring.");
+            return;
+        }
 
-            var selectedUser = dbContext.Set<Models.User>()
-                .Include(user => user.Address)
-                .FirstOrDefault(user => user.Id == item.SelectedUserId);
+        user.Address.AddressData = address.ToUpper();
 
-            if (selectedUser == null)
-            {
-                return;
-            }
+        dbContext.Set<Models.User>().Update(user);
 
-            telegramBotClient.SendLocationAsync(
+        await dbContext.SaveChangesAsync();
+
+        await this.telegramBotClient.SendTextMessageAsync(
+                chatId: message.From?.Id,
+                text: "Ma'lumotlaringiz saqlandi!");
+    }
+
+    private async Task HandleRegionCommandAsync(Message message)
+    {
+        string region = message.Text?.Substring(7).TrimStart().TrimEnd();
+
+        var users = dbContext.Set<Models.User>()
+            .Include(user => user.Address)
+            .Where(user => user.Address.AddressData.Contains(region.ToUpper()));
+
+        foreach (var user in users)
+        {
+            await telegramBotClient.SendTextMessageAsync(
                 chatId: message.From.Id,
-                latitude: (double)selectedUser.Address?.Latitude,
-                longitude: (double)selectedUser.Address.Longitude);
+                text: $"User: {user.FullName}, {user.UserName}, {user.FirstName}\n" +
+                $"Address: {user.Address.AddressData},\n " +
+                $"address link: {MapLink((double)user.Address.Longitude, (double)user.Address.Latitude)}");
         }
     }
 
@@ -77,7 +98,8 @@ public partial class UpdateHandler
         
         await telegramBotClient.SendTextMessageAsync(
             chatId: message.From.Id,
-            text: "Ma'lumotlaringiz saqlandi.");
+            text: "Addresingizni quyidagi formatda yuboring.\n" +
+            "/address Toshkent shahar, yunusoobod tumani, 14-mavze");
     }
 
     private async Task HandleAdminCommandAsync(Message message)
@@ -208,5 +230,12 @@ public partial class UpdateHandler
         await telegramBotClient.SendTextMessageAsync(
             chatId: message.From.Id,
             text: "Xabar yuborildi");
+    }
+
+    private string MapLink(double latitude, double longitude)
+    {
+        string link = $"https://maps.google.com/maps?q={longitude},{latitude}&ll={longitude},{latitude}&z=16";
+
+        return link;
     }
 }

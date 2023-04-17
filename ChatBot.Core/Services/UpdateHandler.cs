@@ -1,6 +1,8 @@
 ﻿using ChatBot.Core.Contexts;
 using ChatBot.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
+using System;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -9,6 +11,8 @@ namespace ChatBot.Core.Services;
 
 public partial class UpdateHandler
 {
+    private string path = @"D:\Telegram Bot Projects\ChatBot\ChatBot.Core\Logs\log.txt";
+
     private readonly ITelegramBotClient telegramBotClient;
     private readonly ILogger<UpdateHandler> logger;
     private readonly AppDbContext dbContext;
@@ -25,7 +29,8 @@ public partial class UpdateHandler
 
     public async Task UpdateHandlerAsync(Update update)
     {
-        
+        System.IO.File.AppendAllText(path, $"{DateTime.Now} - {update.ToString()}\n");
+
         var handler = update.Type switch
         {
             UpdateType.Message => HandleMessageAsync(update.Message),
